@@ -13,6 +13,7 @@ using namespace cv;
 #include <maddrive_cv_tools/cvtrafficlightconfig.h>
 
 void onMouse(int evt, int x, int y, int flags, void* param);
+void onTrackbar( int, void* );
 void update( void );
 
 const int   window_width            = 320;
@@ -52,12 +53,16 @@ int main(int argc, char **argv)
     moveWindow( thresh_window_name, window_width, 0 );
     moveWindow( filtered_window_name, window_width * 2, 0 );
 
-    createTrackbar("Hmin", filtered_window_name, &Hmin, 180, NULL);
-    createTrackbar("Hmax", filtered_window_name, &Hmax, 180, NULL);
-    createTrackbar("Smin", filtered_window_name, &Smin, 255, NULL);
-    createTrackbar("Smax", filtered_window_name, &Smax, 255, NULL);
-    createTrackbar("Vmin", filtered_window_name, &Vmin, 255, NULL);
-    createTrackbar("Vmax", filtered_window_name, &Vmax, 255, NULL);
+    vector<int> &color   = CvTrafficLightConfig::getInstance().getColorspaceLimits();
+    Hmin = color[0]; Smin = color[1]; Vmin = color[2];
+    Hmax = color[3]; Smax = color[4]; Vmax = color[5];
+
+    createTrackbar("Hmin", filtered_window_name, &Hmin, 180, onTrackbar);
+    createTrackbar("Hmax", filtered_window_name, &Hmax, 180, onTrackbar);
+    createTrackbar("Smin", filtered_window_name, &Smin, 255, onTrackbar);
+    createTrackbar("Smax", filtered_window_name, &Smax, 255, onTrackbar);
+    createTrackbar("Vmin", filtered_window_name, &Vmin, 255, onTrackbar);
+    createTrackbar("Vmax", filtered_window_name, &Vmax, 255, onTrackbar);
 
     NodeHandle nh("~");
     string image_filepath;
@@ -86,14 +91,21 @@ int main(int argc, char **argv)
     return 0;
 }
 
+void onTrackbar( int, void* )
+{
+    CvTrafficLightConfig::getInstance().setColorspaceLimits(
+                Hmin, Smin, Vmin, Hmax, Smax, Vmax
+            );
+}
+
 void onMouse(int evt, int x, int y, int flags, void* param)
 {
     if(evt == CV_EVENT_LBUTTONDOWN) {
-        cout << "Clicked L " << x << " / " << y << endl;
+//        cout << "Clicked L " << x << " / " << y << endl;
         roi_rect_ul.x = x;
         roi_rect_ul.y = y;
     } else if (evt == CV_EVENT_RBUTTONDOWN) {
-        cout << "Clicked R " << x << " / " << y << endl;
+//        cout << "Clicked R " << x << " / " << y << endl;
         roi_rect_lr.x = x;
         roi_rect_lr.y = y;
     } else
@@ -111,7 +123,7 @@ void update( void )
 {
     Mat draw_original_image = original_image.clone();
 
-    vector<double> &roi = CvTrafficLightConfig::getInstance().getROIRectangle();
+    vector<double> &roi     = CvTrafficLightConfig::getInstance().getROIRectangle();
     roi_rect_ul = Point( roi[0] * window_width, roi[1] * window_height );
     roi_rect_lr = Point( roi[2] * window_width, roi[3] * window_height );
 
@@ -129,7 +141,10 @@ void update( void )
         imshow( thresh_window_name, roi_image );
     }
 
-    cvtColor( roi_image, filtered_image, CV_BGR2HSV );
-    inRange( filtered_image, Scalar(Hmin, Smin, Vmin), Scalar(Hmax, Smax, Vmax), filtered_image );
-    imshow( filtered_window_name, filtered_image );
+    if ( roi_image.data )
+    {
+        cvtColor( roi_image, filtered_image, CV_BGR2HSV );
+        inRange( filtered_image, Scalar(Hmin, Smin, Vmin), Scalar(Hmax, Smax, Vmax), filtered_image );
+        imshow( filtered_window_name, filtered_image );
+    }
 }

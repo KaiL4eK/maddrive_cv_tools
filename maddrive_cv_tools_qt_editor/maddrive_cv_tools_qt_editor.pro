@@ -12,7 +12,9 @@ SOURCES += \
     ../src/cvtrafficlighttune.cpp
 
 DISTFILES += \
-    ../CMakeLists.txt
+    ../CMakeLists.txt \
+    ../load_traffic_light_params.sh \
+    ../save_traffic_light_params.sh
 
 HEADERS += \
     ../include/maddrive_cv_tools/cvtrafficlightconfig.h

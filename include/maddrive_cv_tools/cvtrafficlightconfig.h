@@ -16,14 +16,14 @@ private:
 
     ros::NodeHandle         parameter_node_handle;
 
+    // Keeped as [ulx, uly, lrx, lry]
     vector<double>  roi_rectangle;
     string          roi_param_name;
 
-    vector<int>     colorspace_min;
-    string          colorspace_min_param_name;
+    // Keeped as [hmin, smin, vmin, hmax, smax, vmax]
+    vector<int>     colorspace_limits;
+    string          colorspace_limits_param_name;
 
-    vector<int>     colorspace_max;
-    string          colorspace_max_param_name;
 
 public:
     static CvTrafficLightConfig& getInstance()
@@ -32,20 +32,12 @@ public:
         return s;
     }
 
-    void setROIRectangle(double ul_x, double ul_y, double lr_x, double lr_y)
-    {
-        roi_rectangle.at(0) = ul_x;
-        roi_rectangle.at(1) = ul_y;
-        roi_rectangle.at(2) = lr_x;
-        roi_rectangle.at(3) = lr_y;
+    void setROIRectangle(double ul_x, double ul_y, double lr_x, double lr_y);
+    vector<double> &getROIRectangle( void );
 
-        parameter_node_handle.setParam(roi_param_name, roi_rectangle);
-    }
+    void setColorspaceLimits(int h_min, int s_min, int v_min, int h_max, int s_max, int v_max);
+    vector<int> &getColorspaceLimits( void );
 
-    vector<double> &getROIRectangle( void )
-    {
-        return roi_rectangle;
-    }
 };
 
 #endif // CVTRAFFICLIGHTCONFIG_H
