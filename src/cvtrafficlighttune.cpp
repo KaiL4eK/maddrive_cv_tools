@@ -39,6 +39,10 @@ const string original_window_name  = "tune";
 const string thresh_window_name    = "thresh";
 const string filtered_window_name  = "filter";
 
+bool use_camera = false;
+
+VideoCapture camera_cap;
+
 int main(int argc, char **argv)
 {
     ros::init( argc, argv, "traffic_light_tuner" );
@@ -67,22 +71,45 @@ int main(int argc, char **argv)
     NodeHandle nh("~");
     string image_filepath;
 
-    nh.getParam("image", image_filepath);
+    ROS_INFO ( "Press enter to save and exit" );
 
-    while ( 1 )
+    if ( !nh.getParam("image", image_filepath) )
     {
+        use_camera = true;
+    } else {
         original_image = imread(image_filepath, CV_LOAD_IMAGE_COLOR);
         if( !original_image.data )
         {
+            use_camera = true;
             ROS_ERROR_STREAM ( "Could not open or find the image: " << image_filepath );
+        } else {
+            resize( original_image, original_image, Size(window_width, window_height) );
+        }
+    }
+
+    if ( use_camera )
+    {
+        camera_cap = VideoCapture(0);
+        if ( !camera_cap.isOpened() )  // check if we succeeded
+        {
+            ROS_ERROR ( "Failed to open camera" );
             return -1;
         }
 
-        resize( original_image, original_image, Size(window_width, window_height) );
+        camera_cap.set ( CV_CAP_PROP_FRAME_WIDTH, window_width );
+        camera_cap.set ( CV_CAP_PROP_FRAME_HEIGHT, window_height );
+    }
 
+    while ( 1 )
+    {
+        if ( use_camera )
+        {
+            camera_cap >> original_image;
+            // resize( original_image, original_image, Size(window_width, window_height) );
+        }
+        
         update();
 
-//        cout << "Key: " << (waitKey(0) & 0xFF) << endl;
         char key = waitKey(30);
         if ( key == 10 || key == 27 )
             break;

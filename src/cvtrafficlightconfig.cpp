@@ -2,7 +2,7 @@
 
 CvTrafficLightConfig::CvTrafficLightConfig()
 {
-    parameter_node_handle = ros::NodeHandle( "/md_cv_traffic_light" );
+    parameter_node_handle = ros::NodeHandle( "md_config/traffic_light" );
 
     roi_rectangle       = vector<double> (4, 0.0);
     colorspace_limits   = vector<int> (6, 0);

@@ -95,7 +95,7 @@ find_package(catkin REQUIRED COMPONENTS
 #   cfg/DynReconf2.cfg
 # )
 
-set(CV_TRAFFIC_LIGHT_CONFIG_LIB_NAME cv_traffic_light_config)
+set(CV_TRAFFIC_LIGHT_CONFIG_LIB_NAME traffic_light_config)
 set(CV_TRAFFIC_LIGHT_CONFIG_LIB_SRC  src/cvtrafficlightconfig.cpp)
 
 ###################################
@@ -118,7 +118,7 @@ catkin_package(
 ## Build ##
 ###########
 
-set(MD_CV_TRAFFIC_LIGHT_NODE_NAME cv_traffic_light_tune)
+set(MD_CV_TRAFFIC_LIGHT_NODE_NAME traffic_light_tune)
 set(MD_CV_TRAFFIC_LIGHT_NODE_SRC  src/cvtrafficlighttune.cpp)
 
 ## Specify additional locations of header files
