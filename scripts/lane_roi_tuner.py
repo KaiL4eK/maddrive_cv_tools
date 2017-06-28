@@ -4,10 +4,15 @@ import rospy
 from sensor_msgs.msg import Image
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
-
 from lane_track_config import *
-
 import numpy as np
+import argparse
+
+parser = argparse.ArgumentParser(description='Process picture with different color modes')
+# parser.add_argument('mode_prefix', action='store', help='Prefix of mode pack')
+parser.add_argument('filepath', action='store', help='Path to image to process')
+parser.add_argument('-v', '--video', action='store_true', help='Process video file')
+args = parser.parse_args()
 
 def image_callback(ros_data):
 	global frame
@@ -25,21 +30,23 @@ rospy.init_node('roi_tuner')
 
 bridge = CvBridge()
 
-subscriber = rospy.Subscriber('/camera/rgb/image_color', Image, image_callback,  queue_size = 10)
+# subscriber = rospy.Subscriber('/camera/rgb/image_color', Image, image_callback,  queue_size = 10)
 
 visible_frame_size = (320, 240)
 
 def main():
-	global frame
-
+	frame = cv2.imread(args.filepath)
+	if frame is None:
+		rospy.logerr('Unable to open file')
+		exit(1)
+	
 	cv2.namedWindow(window_name)
 	
-	def nothing(x): pass
-
 	config = LaneTrackConfig()
 	config.load_params()
 	roi_desc = config.get_roi_descriptor()
 
+	def nothing(x): pass
 	cv2.createTrackbar(roi_trackbar_name, window_name, int(roi_desc.get_height_rel() * 100), 100, nothing)
 
 	rospy.loginfo('Click "s" to save parameters')

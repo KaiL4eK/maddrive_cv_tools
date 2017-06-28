@@ -11,8 +11,6 @@ from Tkinter import *
 from PIL import Image
 from PIL import ImageTk
 import cv2
-
-
 import argparse
 
 parser = argparse.ArgumentParser(description='Process picture with different color modes')
@@ -40,14 +38,13 @@ roi_desc = config.get_roi_descriptor()
 
 modeList = cf_desc.get_mode_list()
 
-# color_filter = ColorFilter()
 current_mode = None
 
-
 modeListControlFrame = Frame(root)
-modeListControlFrame.pack(side = RIGHT, fill = "both")
+modeListControlFrame.grid(row=0, column=7, rowspan=3)
 
 modeListWidget = Listbox(modeListControlFrame)
+modeListWidget.pack(fill = "both")
 
 def updateModeListWidget():
 	global current_mode, modeList
@@ -81,7 +78,7 @@ def onSelect(evt):
 
 updateModeListWidget()
 modeListWidget.bind('<<ListboxSelect>>', onSelect)	
-modeListWidget.pack(fill = "both")
+
 
 ##############################################################
 
@@ -137,15 +134,15 @@ def refresh_filter():
 	if original_image_widget is None or thres_image_widget is None or output_image_widget is None:
 		original_image_widget = Label(image=orig_img)
 		original_image_widget.image = orig_img
-		original_image_widget.pack(side=LEFT, padx=5, pady=5)
+		original_image_widget.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
 
 		thres_image_widget = Label(image=bin_img)
 		thres_image_widget.image = bin_img
-		thres_image_widget.pack(side=LEFT, padx=5, pady=5)
+		thres_image_widget.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
 
 		output_image_widget = Label(image=res_img)
 		output_image_widget.image = res_img
-		output_image_widget.pack(side=RIGHT, padx=5, pady=5)
+		output_image_widget.grid(row=1, column=4, columnspan=2, padx=5, pady=5)
 
 	# otherwise, update the image panels
 	else:
@@ -168,40 +165,32 @@ def slider_cb(val):
 	
 	refresh_filter()
 
-sliders_widget_frame = Frame(root)
-sliders_widget_frame.pack(side = BOTTOM, fill = "both")
+# sliders_widget_frame = Frame(root, highlightbackground='red', highlightthickness=5)
+# sliders_widget_frame.grid(row=3, column=0, columnspan=6, sticky='we')
 
-third_param_frame = Frame(sliders_widget_frame)
-third_param_frame.pack(side = BOTTOM, fill = "both")
+first_param_frame_min = Scale(root, label='color min1', from_=0, to=180, orient=HORIZONTAL, command = slider_cb)
+first_param_frame_min.grid(row=2, column=0, columnspan=3, sticky='we', padx=5, pady=5)
 
-third_param_frame_min = Scale(third_param_frame, from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
-third_param_frame_min.pack(side = LEFT, fill = "both", expand="yes", padx=5, pady=5)
+first_param_frame_max = Scale(root, label='color max1', from_=0, to=180, orient=HORIZONTAL, command = slider_cb)
+first_param_frame_max.grid(row=2, column=3, columnspan=3, sticky='we', padx=5, pady=5)
 
-third_param_frame_max = Scale(third_param_frame, from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
-third_param_frame_max.pack(side = RIGHT, fill = "both", expand="yes", padx=5, pady=5)
+second_param_frame_min = Scale(root, label='color min2', from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
+second_param_frame_min.grid(row=3, column=0, columnspan=3, sticky='we', padx=5, pady=5)
 
-second_param_frame = Frame(sliders_widget_frame)
-second_param_frame.pack(side = BOTTOM, fill = "both")
+second_param_frame_max = Scale(root, label='color max2', from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
+second_param_frame_max.grid(row=3, column=3, columnspan=3, sticky='we', padx=5, pady=5)
 
-second_param_frame_min = Scale(second_param_frame, from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
-second_param_frame_min.pack(side = LEFT, fill = "both", expand="yes", padx=5, pady=5)
+third_param_frame_min = Scale(root, label='color min3', from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
+third_param_frame_min.grid(row=4, column=0, columnspan=3, sticky='we', padx=5, pady=5)
 
-second_param_frame_max = Scale(second_param_frame, from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
-second_param_frame_max.pack(side = RIGHT, fill = "both", expand="yes", padx=5, pady=5)
+third_param_frame_max = Scale(root, label='color max3', from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
+third_param_frame_max.grid(row=4, column=3, columnspan=3, sticky='we', padx=5, pady=5)
 
-first_param_frame = Frame(sliders_widget_frame)
-first_param_frame.pack(side = BOTTOM, fill = "both")
-
-first_param_frame_min = Scale(first_param_frame, from_=0, to=180, orient=HORIZONTAL, command = slider_cb)
-first_param_frame_min.pack(side = LEFT, fill = "both", expand="yes", padx=5, pady=5)
-
-first_param_frame_max = Scale(first_param_frame, from_=0, to=180, orient=HORIZONTAL, command = slider_cb)
-first_param_frame_max.pack(side = RIGHT, fill = "both", expand="yes", padx=5, pady=5)
 
 ##############################################################
 
 filling_var = StringVar()
-Label(root, textvariable = filling_var, font=("Helvetica", 16)).pack(side = TOP)
+Label(root, textvariable = filling_var, font=("Helvetica", 16)).grid(row=0, column=0, columnspan=6)
 
 ##############################################################
 
