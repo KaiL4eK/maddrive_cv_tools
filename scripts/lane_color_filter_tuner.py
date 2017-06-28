@@ -83,7 +83,6 @@ updateModeListWidget()
 modeListWidget.bind('<<ListboxSelect>>', onSelect)	
 modeListWidget.pack(fill = "both")
 
-
 ##############################################################
 
 def addMode_cb():
@@ -163,12 +162,9 @@ def refresh_filter():
 ##############################################################
 
 def slider_cb(val):
-
 	if current_mode is not None:
-		current_mode.range_minmaxs = (
-										first_param_frame_min.get(), second_param_frame_min.get(), third_param_frame_min.get(),
-										first_param_frame_max.get(), second_param_frame_max.get(), third_param_frame_max.get() 
-									)
+		current_mode.range_minmaxs = ( first_param_frame_min.get(), second_param_frame_min.get(), third_param_frame_min.get(),
+									   first_param_frame_max.get(), second_param_frame_max.get(), third_param_frame_max.get() )
 	
 	refresh_filter()
 
@@ -226,6 +222,10 @@ if args.video:
 	video_slider.pack(side = TOP, fill = "both", expand="yes", padx=5, pady=5)
 else:
 	original_image = cv2.imread(args.filepath)
+	if original_image is None:
+		rospy.logerr('Unable to open file')
+		exit(1)
+
 	original_image = cv2.resize(original_image, render_image_size, interpolation = cv2.INTER_LINEAR)
 
 
