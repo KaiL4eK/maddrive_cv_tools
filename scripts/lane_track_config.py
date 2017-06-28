@@ -5,6 +5,7 @@ import errno
 import cv2
 import rospy
 import rosparam
+import numpy as np
 from os.path import expanduser
 
 def get_frame_height_width(frame):
@@ -23,6 +24,65 @@ def get_frame_channels(frame):
 
 	return channels
 
+class ColorFilterMode:
+	def __init__(self, range_minmaxs):
+		self.range_minmaxs = range_minmaxs
+
+	def get_mins(self):
+		return self.range_minmaxs[0:3]
+
+	def get_maxs(self):
+		return self.range_minmaxs[3:6]
+
+	def apply_filter(self, frame, transform):
+		transformed_image = cv2.cvtColor(frame, transform)
+
+		result_image = cv2.inRange(transformed_image, tuple(self.get_mins()), tuple(self.get_maxs()))
+		return result_image
+
+class ColorFilter:
+	def __init__(self, transform):
+		self.transform = transform
+		self.mode_list = []
+
+	def new_mode(self, minmaxs=[0, 0, 0, 180, 255, 255]):
+		new_mode = ColorFilterMode(minmaxs)
+		self.mode_list.append(new_mode)
+
+	def remove_mode(self, mode):
+		self.mode_list.remove(mode)
+
+	def get_mode_list(self):
+		return self.mode_list
+
+	def set_mode_list(self, mode_list):
+		self.mode_list = mode_list
+
+	def get_minmaxs_list(self):
+		result_list = []
+		for mode in self.mode_list:
+			result_list.append(list(mode.range_minmaxs))
+
+		return result_list
+
+	def estimate_filling (self, bin_frame):
+		height, width = get_frame_height_width(bin_frame)
+		filling_perc = int(np.sum(bin_frame) / 255. / (height * width) * 100)
+		return filling_perc
+
+	def apply_filters(self, frame, confidence):
+		height, width = get_frame_height_width(frame)
+		result_frame = np.zeros((height, width), dtype=np.uint8)
+
+		for mode in self.mode_list:
+			result_mode = mode.apply_filter(frame, self.transform)
+			conf = self.estimate_filling(result_mode)
+
+			if conf < confidence:
+				result_frame = cv2.bitwise_or(result_mode, result_frame)
+
+		return result_frame, self.estimate_filling(result_frame)
+
 class ImageROI:
 	def __init__(self, roi_height_rel):
 		self.__roi_height_rel = roi_height_rel
@@ -36,11 +96,12 @@ class ImageROI:
 		cv2.line(draw_frame, (0, int(pixel_upper_border)), 
 							 (width, int(pixel_upper_border)), color=color)
 
-	def mask_frame(self, frame):
-		height, _ = get_frame_height_width(frame)
+	def mask_frame_resize(self, frame):
+		height, width = get_frame_height_width(frame)
 		pixel_upper_border = self.__get_pixel_height(height)
 
-		return frame[int(pixel_upper_border):height, :]
+		result = frame[int(pixel_upper_border):height, :]
+		return cv2.resize(result, (width, height))
 
 	def set_height_rel(self, roi_height_rel):
 		if roi_height_rel > 0:
@@ -53,7 +114,11 @@ class LaneTrackConfig:
 	
 	def __init__(self, ns='md_config/lane'):
 		self.ns = ns
-		self.roi_param_name = 'roi'
+
+		self.roi_param_name = self.ns + '/roi'
+		self.color_filter_transform_name = self.ns + '/color_filter/transform'
+		self.color_filter_minmaxs_name = self.ns + '/color_filter/minmaxs'
+
 		self.config_filepath = expanduser("~") + '/.maddrive_config/lane_config.yaml'
 
 	def save_params(self):
@@ -76,9 +141,11 @@ class LaneTrackConfig:
 			rospy.logwarn('Failed to read data from config')
 			return False
 
+
+
 	def get_roi_descriptor(self):
-		roi_param_value = self.__get_roi_param()
-		if roi_param_value < 0:
+		roi_param_value = self.__get_param(self.roi_param_name)
+		if roi_param_value is None:
 			roi_param_value = 0.5		# Default
 			rospy.loginfo('Using default value: {}'.format(roi_param_value))
 
@@ -86,15 +153,37 @@ class LaneTrackConfig:
 
 	def set_roi_descriptor(self, roi_desc):
 		roi_param_value = roi_desc.get_height_rel()
-		self.__set_roi_param(roi_param_value)
+		self.__set_param(self.roi_param_name, roi_param_value)
 
-	def __set_roi_param(self, roi_height_rel_value):
-		rosparam.set_param(self.ns + '/' + self.roi_param_name, str(roi_height_rel_value))
 
-	def __get_roi_param(self):
+	def get_color_filter_descriptor(self):
+		cf_tranform = self.__get_param(self.color_filter_transform_name)
+		if cf_tranform is None:
+			cf_tranform = cv2.COLOR_BGR2HSV
+
+		cf_minmaxs = self.__get_param(self.color_filter_minmaxs_name)
+		if cf_minmaxs is None:
+			cf_minmaxs = []
+
+		print(cf_minmaxs)
+
+		cf_desc = ColorFilter(cf_tranform)
+		for minmaxs in cf_minmaxs:
+			cf_desc.new_mode(minmaxs)
+
+		return cf_desc
+
+	def set_color_filter_descriptor(self, cf_desc):
+		self.__set_param(self.color_filter_transform_name, cf_desc.transform)
+		self.__set_param(self.color_filter_minmaxs_name, cf_desc.get_minmaxs_list())
+
+	def __set_param(self, name, value):
+		rosparam.set_param(name, str(value))
+
+	def __get_param(self, name):
 		try:
-			result = rosparam.get_param(self.ns + '/' + self.roi_param_name)
+			result = rosparam.get_param(name)
 			return result
 		except:
-			rospy.logwarn('Failed to get param from server')
-			return -1
+			rospy.logwarn('Failed to get param %s from server' % name)
+			return None

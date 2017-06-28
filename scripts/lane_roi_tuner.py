@@ -53,8 +53,7 @@ def main():
 
 			roi_y_rel = (cv2.getTrackbarPos(roi_trackbar_name, window_name) / 100.)
 			roi_desc.set_height_rel(roi_y_rel)
-			roi_frame = roi_desc.mask_frame(work_frame)
-			roi_frame = cv2.resize(roi_frame, visible_frame_size)
+			roi_frame = roi_desc.mask_frame_resize(work_frame)
 			roi_desc.draw_height_border(work_frame)
 
 			result_frame = np.hstack( (work_frame, roi_frame) );

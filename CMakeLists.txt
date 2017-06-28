@@ -118,7 +118,7 @@ catkin_package(
 ## Build ##
 ###########
 
-set(MD_CV_TRAFFIC_LIGHT_NODE_NAME traffic_light_tune)
+set(MD_CV_TRAFFIC_LIGHT_NODE_NAME traffic_light_tuner)
 set(MD_CV_TRAFFIC_LIGHT_NODE_SRC  src/cvtrafficlighttune.cpp)
 
 ## Specify additional locations of header files

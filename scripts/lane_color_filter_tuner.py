@@ -1,26 +1,30 @@
-from __future__ import print_function
+#!/usr/bin/env python
+
+import rospy
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
+
+import numpy as np
+from lane_track_config import *
 
 from Tkinter import *
 from PIL import Image
 from PIL import ImageTk
-# import tkFileDialog
 import cv2
 
-from tools import *
-from tune_roi import *
-from filter_cmode import *
 
 import argparse
 
 parser = argparse.ArgumentParser(description='Process picture with different color modes')
-parser.add_argument('mode_prefix', action='store', help='Prefix of mode pack')
+# parser.add_argument('mode_prefix', action='store', help='Prefix of mode pack')
 parser.add_argument('filepath', action='store', help='Path to image to process')
 parser.add_argument('-v', '--video', action='store_true', help='Process video file')
 args = parser.parse_args()
 
+rospy.init_node('color_filter_tuner')
+
 render_image_size = (320, 240)
 
-roi_tuner = TunerROI(config_prefix=roi_default_fileprefix)
 # initialize the window toolkit along with the two image panels
 root = Tk()
 original_image_widget = None
@@ -29,13 +33,15 @@ output_image_widget = None
 
 ##############################################################
 
-color_filter = ColorFilter()
-current_mode = None
-filter_modeList = FilterColorModeList(args.mode_prefix)
-if not filter_modeList.loadFromFile():
-	exit(1)
+config = LaneTrackConfig()
+config.load_params()
+cf_desc = config.get_color_filter_descriptor()
+roi_desc = config.get_roi_descriptor()
 
-modeList = filter_modeList.getModes()
+modeList = cf_desc.get_mode_list()
+
+# color_filter = ColorFilter()
+current_mode = None
 
 
 modeListControlFrame = Frame(root)
@@ -44,11 +50,13 @@ modeListControlFrame.pack(side = RIGHT, fill = "both")
 modeListWidget = Listbox(modeListControlFrame)
 
 def updateModeListWidget():
-	global current_mode
+	global current_mode, modeList
 
 	modeListWidget.delete(0, END)
+
+	modeList = cf_desc.get_mode_list()
 	for i, mode in enumerate(modeList):
-		modeListWidget.insert(i, '%s Filter %d' % (mode.filterName, i))
+		modeListWidget.insert(i, 'Filter %d' % i)
 
 	current_mode = None
 
@@ -58,16 +66,16 @@ def onSelect(evt):
 	w = evt.widget
 	index = int(w.curselection()[0])
 	current_mode = modeList[index]
-	print('You selected item {}: {} / {}'.format(index, current_mode.lower_bound, current_mode.upper_bound))
+	print('You selected item {}: {} / {}'.format(index, current_mode.get_mins(), current_mode.get_maxs()))
 
-	first_param_frame_min.set(current_mode.lower_bound[0])
-	first_param_frame_max.set(current_mode.upper_bound[0])
+	first_param_frame_min.set(current_mode.get_mins()[0])
+	first_param_frame_max.set(current_mode.get_maxs()[0])
 
-	second_param_frame_min.set(current_mode.lower_bound[1])
-	second_param_frame_max.set(current_mode.upper_bound[1])
+	second_param_frame_min.set(current_mode.get_mins()[1])
+	second_param_frame_max.set(current_mode.get_maxs()[1])
 
-	third_param_frame_min.set(current_mode.lower_bound[2])
-	third_param_frame_max.set(current_mode.upper_bound[2])
+	third_param_frame_min.set(current_mode.get_mins()[2])
+	third_param_frame_max.set(current_mode.get_maxs()[2])
 
 	refresh_filter()
 
@@ -78,35 +86,29 @@ modeListWidget.pack(fill = "both")
 
 ##############################################################
 
-def addMode():
+def addMode_cb():
+	cf_desc.new_mode()
+	updateModeListWidget()
+
+def removeMode_cb():
 	if current_mode is None:
 		return
 
-	newMode = FilterColorMode(current_mode.transform, current_mode.lower_bound, current_mode.upper_bound)
-	modeList.append(newMode)
-
+	cf_desc.remove_mode(current_mode)
 	updateModeListWidget()
 
-def removeMode():
-	if current_mode is None:
-		return
-
-	modeList.remove(current_mode)
-
-	updateModeListWidget()
-
-def saveModes():
-	filter_modeList.setModes(modeList)
-	filter_modeList.saveToFile()
+def saveModes_cb():
+	config.set_color_filter_descriptor(cf_desc)
+	config.save_params()
 
 
-addModeBtn = Button(modeListControlFrame, text="Add mode", command=addMode)
+addModeBtn = Button(modeListControlFrame, text="Add mode", command=addMode_cb)
 addModeBtn.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
 
-removeModeBtn = Button(modeListControlFrame, text="Remove mode", command=removeMode)
+removeModeBtn = Button(modeListControlFrame, text="Remove mode", command=removeMode_cb)
 removeModeBtn.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
 
-saveModesBtn = Button(modeListControlFrame, text="Save modes", command=saveModes)
+saveModesBtn = Button(modeListControlFrame, text="Save modes", command=saveModes_cb)
 saveModesBtn.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
 
 ##############################################################
@@ -115,18 +117,18 @@ def refresh_filter():
 	# grab a reference to the image panels
 	global original_image_widget, thres_image_widget, output_image_widget
 	
-	mask_image = roi_tuner.mask_image(original_image)
-	perspecive_roi = roi_tuner.get_perspective_transform(original_image)
+	roi_frame = roi_desc.mask_frame_resize(original_image)
 
 	if current_mode is not None:
-		filtered_img, filling = color_filter.filter_with_mode(current_mode, perspecive_roi)
+		filtered_img = current_mode.apply_filter(roi_frame, cf_desc.transform)
+		filling = cf_desc.estimate_filling(filtered_img)
 	else:
-		filtered_img = np.zeros_like(perspecive_roi)
+		filtered_img = np.zeros_like(roi_frame)
 		filling = 0
 
-	filtered_img_full, filling_full = color_filter.filter_list_modes(modeList, perspecive_roi, 30)
+	filtered_img_full, filling_full = cf_desc.apply_filters(roi_frame, 30)
 
-	rgb_original_image = cv2.cvtColor(perspecive_roi, cv2.COLOR_BGR2RGB)
+	rgb_original_image = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2RGB)
 
 	# convert the images to PIL format and then to ImageTk format
 	orig_img = ImageTk.PhotoImage(Image.fromarray(rgb_original_image))
@@ -160,11 +162,13 @@ def refresh_filter():
 
 ##############################################################
 
-def slider_callback(val):
+def slider_cb(val):
 
 	if current_mode is not None:
-		current_mode.lower_bound = (first_param_frame_min.get(), second_param_frame_min.get(), third_param_frame_min.get())
-		current_mode.upper_bound = (first_param_frame_max.get(), second_param_frame_max.get(), third_param_frame_max.get())
+		current_mode.range_minmaxs = (
+										first_param_frame_min.get(), second_param_frame_min.get(), third_param_frame_min.get(),
+										first_param_frame_max.get(), second_param_frame_max.get(), third_param_frame_max.get() 
+									)
 	
 	refresh_filter()
 
@@ -174,28 +178,28 @@ sliders_widget_frame.pack(side = BOTTOM, fill = "both")
 third_param_frame = Frame(sliders_widget_frame)
 third_param_frame.pack(side = BOTTOM, fill = "both")
 
-third_param_frame_min = Scale(third_param_frame, from_=0, to=255, orient=HORIZONTAL, command = slider_callback)
+third_param_frame_min = Scale(third_param_frame, from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
 third_param_frame_min.pack(side = LEFT, fill = "both", expand="yes", padx=5, pady=5)
 
-third_param_frame_max = Scale(third_param_frame, from_=0, to=255, orient=HORIZONTAL, command = slider_callback)
+third_param_frame_max = Scale(third_param_frame, from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
 third_param_frame_max.pack(side = RIGHT, fill = "both", expand="yes", padx=5, pady=5)
 
 second_param_frame = Frame(sliders_widget_frame)
 second_param_frame.pack(side = BOTTOM, fill = "both")
 
-second_param_frame_min = Scale(second_param_frame, from_=0, to=255, orient=HORIZONTAL, command = slider_callback)
+second_param_frame_min = Scale(second_param_frame, from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
 second_param_frame_min.pack(side = LEFT, fill = "both", expand="yes", padx=5, pady=5)
 
-second_param_frame_max = Scale(second_param_frame, from_=0, to=255, orient=HORIZONTAL, command = slider_callback)
+second_param_frame_max = Scale(second_param_frame, from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
 second_param_frame_max.pack(side = RIGHT, fill = "both", expand="yes", padx=5, pady=5)
 
 first_param_frame = Frame(sliders_widget_frame)
 first_param_frame.pack(side = BOTTOM, fill = "both")
 
-first_param_frame_min = Scale(first_param_frame, from_=0, to=180, orient=HORIZONTAL, command = slider_callback)
+first_param_frame_min = Scale(first_param_frame, from_=0, to=180, orient=HORIZONTAL, command = slider_cb)
 first_param_frame_min.pack(side = LEFT, fill = "both", expand="yes", padx=5, pady=5)
 
-first_param_frame_max = Scale(first_param_frame, from_=0, to=180, orient=HORIZONTAL, command = slider_callback)
+first_param_frame_max = Scale(first_param_frame, from_=0, to=180, orient=HORIZONTAL, command = slider_cb)
 first_param_frame_max.pack(side = RIGHT, fill = "both", expand="yes", padx=5, pady=5)
 
 ##############################################################
