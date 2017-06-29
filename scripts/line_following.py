@@ -86,8 +86,9 @@ def main():
 			control_right = lane.control_x
 			cv2.line(roi_frame, (int(control_right), 0), (int(control_right), orig_height), (255, 255, 0), thickness=3)
 
+			out_frame = cv2.resize(roi_frame, (320, 240))
 			# result_frame = np.hstack( (work_frame, roi_frame) );
-			cv2.imshow(window_name, roi_frame)
+			cv2.imshow(window_name, out_frame)
 			cv2.waitKey(1)
 
 			control_pub.publish(control_right)
