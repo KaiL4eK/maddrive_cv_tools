@@ -13,6 +13,8 @@ import numpy as np
 # parser.add_argument('-v', '--video', action='store_true', help='Process video file')
 # args = parser.parse_args()
 
+bridge = CvBridge()
+
 def image_callback(ros_data):
 	global frame
 	try:
@@ -25,7 +27,6 @@ rospy.init_node('lane_roi_tuner')
 window_name = 'roi'
 roi_trackbar_name = 'roi_height'
 
-
 #-------------------------------------------------
 
 use_kinect_topic = rospy.get_param('~use_kinect_topic', False)
@@ -35,8 +36,6 @@ rospy.loginfo('[%s] Param <use_kinect_topic>: %s' % (os.path.basename(__file__),
 rospy.loginfo('[%s] Param <filepath>: %s' % (os.path.basename(__file__), str(filepath)))
 
 #-------------------------------------------------
-
-bridge = CvBridge()
 
 if use_kinect_topic:
 	rospy.Subscriber('image', Image, image_callback,  queue_size = 10)

@@ -60,6 +60,16 @@ class LaneSearch:
 		left_fitx  = self.left.polyfit_lines(leftx, lefty, binary_image.shape)
 		right_fitx = self.right.polyfit_lines(rightx, righty, binary_image.shape)
 
+		if self.visualize:
+			height, width = binary_image.shape
+			print(binary_image.shape)
+			print(self.left.line_base_pos, self.right.line_base_pos)
+			cv2.line(draw_frame, (int(self.right.line_base_pos), 0), (int(self.right.line_base_pos), height), (255, 255, 0), thickness=3)
+			cv2.line(draw_frame, (int(self.left.line_base_pos), 0), (int(self.left.line_base_pos), height), (255, 255, 0), thickness=3)
+
+			cv2.imshow(self.visualize_window,draw_frame)
+			cv2.waitKey(self.visualize_delay)
+
 		return left_fitx, right_fitx, self.right.ploty
 
 
@@ -218,7 +228,7 @@ class Line:
 		self.detected = False
 		# self.radius_of_curvature = None
 		#distance in meters of vehicle center from the line
-		# self.line_base_pos = None
+		self.line_base_pos = None
 		#difference in fit coefficients between last and new fits
 		# self.diffs = np.array([0,0,0], dtype='float')
 		#x values for detected line pixels
@@ -262,7 +272,8 @@ class Line:
 		# line_fitx = self.line_fit[0] * self.ploty ** 2 + self.line_fit[1] * self.ploty + self.line_fit[2]
 		line_fitx = self.line_fit[0] * self.ploty + self.line_fit[1]
 		
-		# line_fitx_int = self.line_fit[0] * image_shape[0] ** 2 + self.line_fit[1] * image_shape[0] + self.line_fit[2]
+		y_int = image_shape[0] / 2
+		self.line_base_pos = self.line_fit[0] * y_int + self.line_fit[1]
 
 		# y_eval = np.max(self.ploty)
 

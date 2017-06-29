@@ -6,7 +6,7 @@
 	<node pkg="maddrive_cv_tools" name="video_2_camera_stream" type="video_2_camera_stream.py" output="screen">
 		<param name="filepath" value="$(find maddrive_cv_tools)/lane_test_video.webm" />
 	</node>
-	<node pkg="maddrive_cv_tools" name="lane_roi_tuner" type="lane_roi_tuner.py" output="screen">
+	<node pkg="maddrive_cv_tools" name="lane_color_filter_tuner" type="lane_color_filter_tuner.py" output="screen">
 		<param name="use_kinect_topic" value="true" />
 		<remap from="image" to="camera/rgb/image_color" />
 	</node >

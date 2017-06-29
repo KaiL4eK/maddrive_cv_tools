@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+	<rosparam file="$(find maddrive_cv_tools)/config/lane_config.yaml" ns="md_config/lane" />
+</launch>
