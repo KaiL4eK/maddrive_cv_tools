@@ -32,7 +32,7 @@ output_image_widget = None
 ##############################################################
 
 config = LaneTrackConfig()
-config.load_params()
+# config.load_params()
 cf_desc = config.get_color_filter_descriptor()
 roi_desc = config.get_roi_descriptor()
 

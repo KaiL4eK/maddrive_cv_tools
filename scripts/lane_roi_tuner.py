@@ -6,13 +6,12 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from lane_track_config import *
 import numpy as np
-import argparse
 
-parser = argparse.ArgumentParser(description='Process picture with different color modes')
-# parser.add_argument('mode_prefix', action='store', help='Prefix of mode pack')
-parser.add_argument('filepath', action='store', help='Path to image to process')
-parser.add_argument('-v', '--video', action='store_true', help='Process video file')
-args = parser.parse_args()
+# parser = argparse.ArgumentParser(description='Process picture with different color modes')
+# parser.add_argument('-f', '--filepath', action='store', help='Path to image to process')
+# parser.add_argument('-k', '--kinect', action='store_true', help='Get image from kinect camera')
+# parser.add_argument('-v', '--video', action='store_true', help='Process video file')
+# args = parser.parse_args()
 
 def image_callback(ros_data):
 	global frame
@@ -21,29 +20,44 @@ def image_callback(ros_data):
 	except CvBridgeError as e:
 		rospy.logerror(e)
 
+rospy.init_node('lane_roi_tuner')
 
 window_name = 'roi'
 roi_trackbar_name = 'roi_height'
-frame = None
 
-rospy.init_node('roi_tuner')
+
+#-------------------------------------------------
+
+use_kinect_topic = rospy.get_param('~use_kinect_topic', False)
+filepath = rospy.get_param('~filepath', '')
+
+rospy.loginfo('[%s] Param <use_kinect_topic>: %s' % (os.path.basename(__file__), str(use_kinect_topic)))
+rospy.loginfo('[%s] Param <filepath>: %s' % (os.path.basename(__file__), str(filepath)))
+
+#-------------------------------------------------
 
 bridge = CvBridge()
 
-# subscriber = rospy.Subscriber('/camera/rgb/image_color', Image, image_callback,  queue_size = 10)
+if use_kinect_topic:
+	rospy.Subscriber('image', Image, image_callback,  queue_size = 10)
 
 visible_frame_size = (320, 240)
 
 def main():
-	frame = cv2.imread(args.filepath)
-	if frame is None:
-		rospy.logerr('Unable to open file')
-		exit(1)
+	global frame
+
+	frame = None
+
+	if not use_kinect_topic:
+		frame = cv2.imread(filepath)
+		if frame is None:
+			rospy.logerr('Unable to open file')
+			exit(1)
 	
 	cv2.namedWindow(window_name)
 	
 	config = LaneTrackConfig()
-	config.load_params()
+	# config.load_params()
 	roi_desc = config.get_roi_descriptor()
 
 	def nothing(x): pass

@@ -3,17 +3,17 @@
 import rospy
 from sensor_msgs.msg import Image
 
+import os.path
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 
 rospy.init_node('video_2_camera_stream')
 
-videoPub = rospy.Publisher('/camera/rgb/image_color', Image, queue_size=10)
+videoPub = rospy.Publisher('camera/rgb/image_color', Image, queue_size=10)
 rate = rospy.Rate(30)
 
 filepath = rospy.get_param('~filepath')
-
-rospy.loginfo('Filepath: %s' % filepath)
+rospy.loginfo('[%s] Param <filepath>: %s' % (os.path.basename(__file__), str(filepath)))
 
 capture = cv2.VideoCapture(filepath)
 

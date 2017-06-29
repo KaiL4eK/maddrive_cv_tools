@@ -5,6 +5,8 @@ import errno
 import cv2
 import rospy
 import rosparam
+import rospkg
+rospack = rospkg.RosPack()
 import numpy as np
 from os.path import expanduser
 
@@ -116,10 +118,14 @@ class LaneTrackConfig:
 		self.ns = ns
 
 		self.roi_param_name = self.ns + '/roi'
-		self.color_filter_transform_name = self.ns + '/color_filter/transform'
-		self.color_filter_minmaxs_name = self.ns + '/color_filter/minmaxs'
 
-		self.config_filepath = expanduser("~") + '/.maddrive_config/lane_config.yaml'
+		self.color_filter_transform_name = 'color_filter/transform'
+		self.color_filter_minmaxs_name   = 'color_filter/minmaxs'
+
+		self.color_filter_transform_path = self.ns + '/' + self.color_filter_transform_name
+		self.color_filter_minmaxs_path   = self.ns + '/' + self.color_filter_minmaxs_name
+
+		self.config_filepath = rospack.get_path('maddrive_cv_tools') + '/lane_config.yaml'
 
 	def save_params(self):
 		rospy.loginfo('Saving parameters')
@@ -132,10 +138,12 @@ class LaneTrackConfig:
 
 		rosparam.dump_params(self.config_filepath, self.ns, True)
 
-	def load_params(self):
+	## TODO!!!
+	def __load_params(self):
 		try:
 			rospy.loginfo('Loading parameters')
-			rosparam.load_file(self.config_filepath, self.ns, True)
+			res = rosparam.load_file(self.config_filepath, self.ns, True)[0]
+			rospy.loginfo('Loading done')
 			return True
 		except:
 			rospy.logwarn('Failed to read data from config')
@@ -157,11 +165,11 @@ class LaneTrackConfig:
 
 
 	def get_color_filter_descriptor(self):
-		cf_tranform = self.__get_param(self.color_filter_transform_name)
+		cf_tranform = self.__get_param(self.color_filter_transform_path)
 		if cf_tranform is None:
 			cf_tranform = cv2.COLOR_BGR2HSV
 
-		cf_minmaxs = self.__get_param(self.color_filter_minmaxs_name)
+		cf_minmaxs = self.__get_param(self.color_filter_minmaxs_path)
 		if cf_minmaxs is None:
 			cf_minmaxs = []
 
@@ -174,8 +182,8 @@ class LaneTrackConfig:
 		return cf_desc
 
 	def set_color_filter_descriptor(self, cf_desc):
-		self.__set_param(self.color_filter_transform_name, cf_desc.transform)
-		self.__set_param(self.color_filter_minmaxs_name, cf_desc.get_minmaxs_list())
+		self.__set_param(self.color_filter_transform_path, cf_desc.transform)
+		self.__set_param(self.color_filter_minmaxs_path, cf_desc.get_minmaxs_list())
 
 	def __set_param(self, name, value):
 		rosparam.set_param(name, str(value))

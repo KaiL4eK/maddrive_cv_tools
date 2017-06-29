@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<launch>
+	<rosparam file="$(find maddrive_cv_tools)/lane_config.yaml" ns="md_config/lane" />
+	<include file="$(find openni_launch)/launch/openni.launch" />
+	<node pkg="maddrive_cv_tools" name="lane_roi_tuner" type="lane_roi_tuner.py" output="screen">
+		<param name="use_kinect_topic" value="true" />
+		<remap from="image" to="camera/rgb/image_color" />
+	</node >
+</launch>

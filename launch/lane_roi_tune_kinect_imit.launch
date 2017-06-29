@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<launch>
+	<rosparam file="$(find maddrive_cv_tools)/lane_config.yaml" ns="md_config/lane" />
+	<node pkg="maddrive_cv_tools" name="video_2_camera_stream" type="video_2_camera_stream.py" output="screen">
+		<param name="filepath" value="$(find maddrive_cv_tools)/lane_test_video.webm" />
+	</node>
+	<node pkg="maddrive_cv_tools" name="lane_roi_tuner" type="lane_roi_tuner.py" output="screen">
+		<param name="use_kinect_topic" value="true" />
+		<remap from="image" to="camera/rgb/image_color" />
+	</node >
+</launch>
