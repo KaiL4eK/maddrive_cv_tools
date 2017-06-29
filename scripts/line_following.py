@@ -1,12 +1,22 @@
 #!/usr/bin/env python
 
 import rospy
-from sensor_msgs.msg import Image
+import std_msgs.msg
+import sensor_msgs.msg
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from lane_track_config import *
 import numpy as np
 from lane_search import *
+
+bridge = CvBridge()
+
+def image_callback(ros_data):
+	global frame
+	try:
+		frame = bridge.imgmsg_to_cv2(ros_data, "bgr8")
+	except CvBridgeError as e:
+		rospy.logerror(e)
 
 rospy.init_node('lane_follower')
 
@@ -20,6 +30,9 @@ rospy.loginfo('[%s] Param <use_kinect_topic>: %s' % (os.path.basename(__file__),
 rospy.loginfo('[%s] Param <file_as_video>: %s' % (os.path.basename(__file__), str(file_as_video)))
 rospy.loginfo('[%s] Param <filepath>: %s' % (os.path.basename(__file__), str(filepath)))
 
+# image_pub = rospy.Publisher('md_control/image', sensor_msgs.msg.Image, queue_size=10)
+control_pub = rospy.Publisher('md_control/control', std_msgs.msg.Int32, queue_size=10)
+
 #-------------------------------------------------
 
 window_name = 'result'
@@ -27,15 +40,20 @@ window_name = 'result'
 visible_frame_size = (640, 480)
 
 def main():
-	if file_as_video:
+	global frame
+
+	if use_kinect_topic:
+		rospy.Subscriber('image', sensor_msgs.msg.Image, image_callback,  queue_size = 10)	
+
+	elif file_as_video:
 		cap = cv2.VideoCapture(filepath)
 		if not cap.isOpened():
 			rospy.logerr('Unable to open video file')
 			exit(1)
 
 	else:
-		original_image = cv2.imread(args.filepath)
-		if original_image is None:
+		frame = cv2.imread(args.filepath)
+		if frame is None:
 			rospy.logerr('Unable to open image file')
 			exit(1)
 
@@ -47,27 +65,32 @@ def main():
 	lane = LaneSearch()
 
 	while not rospy.is_shutdown():
-		ret, frame = cap.read()
-
+		if not use_kinect_topic:
+			if file_as_video:
+				ret, frame = cap.read()
+		
 		if frame is not None:
 			work_frame = np.copy(frame)
 
 			work_frame = cv2.resize(work_frame, visible_frame_size)
+
+			work_frame = cv2.GaussianBlur(work_frame,(3,3),0)
+			work_frame = cv2.morphologyEx(work_frame, cv2.MORPH_OPEN, np.ones((5,5),np.uint8))
+
 			orig_height, orig_width = get_frame_height_width(work_frame)
 			roi_frame = roi_desc.mask_frame_resize(work_frame)
 			bin_frame, _ = cf_desc.apply_filters(roi_frame, 10)
 
-			left_fitx, right_fitx, fity = lane.get_lane_polynomials(bin_frame)
+			lane.update_lane_control(bin_frame)
 
-			for i in range(len(fity)):
-				cv2.circle(roi_frame, (int(left_fitx[i]), int(fity[i])), 1, (0, 255, 0))
-				cv2.circle(roi_frame, (int(right_fitx[i]), int(fity[i])), 1, (0, 0, 255))
+			control_right = lane.control_x
+			cv2.line(roi_frame, (int(control_right), 0), (int(control_right), orig_height), (255, 255, 0), thickness=3)
 
+			# result_frame = np.hstack( (work_frame, roi_frame) );
+			cv2.imshow(window_name, roi_frame)
+			cv2.waitKey(1)
 
-			result_frame = np.hstack( (work_frame, roi_frame) );
-			# cv2.imshow(window_name, result_frame)
-			if cv2.waitKey(1) == ord('q'):
-				exit(0)
+			control_pub.publish(control_right)
 		else:
 			rospy.loginfo('Video closed or error')
 			break

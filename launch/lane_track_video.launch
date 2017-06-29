@@ -4,7 +4,7 @@
 	<include file="$(find maddrive_cv_tools)/config/load_config.xml" />
 
 	<node pkg="maddrive_cv_tools" name="line_following" type="line_following.py" output="screen">
-		<param name="filepath" value="$(find maddrive_cv_tools)/lane_test_video.webm" />
+		<param name="filepath" value="$(find maddrive_cv_tools)/straight_line.webm" />
 		<param name="file_as_video" value="true" />
 	</node>
 </launch>

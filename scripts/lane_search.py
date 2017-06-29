@@ -15,9 +15,9 @@ class LaneSearch:
 	
 	def __init__(self):
 		self.visualize_window = 'lane_search'
-		self.visualize_delay = 1000
+		self.visualize_delay = 0
 		# self.visualize = True
-		self.visualize = True
+		self.visualize = False
 		self.middled = False
 
 		self.counter = 0 # Tick tick tick
@@ -28,8 +28,14 @@ class LaneSearch:
 		self.vehicle_position_text = '' # TODO: Move to a separate view model class
 		self.radius_of_curvature_text = '' # TODO: Move to a separate view model class
 
+		self.control_x = 0
+
+		self.left_center = (0, 0)
+		self.right_center = (0, 0)
+
 	def find_lane_pixels(self, binary_image):
 		self.counter += 1
+
 		# print('Check for pixels')
 		# if self.left.line_fit is None or self.right.line_fit is None:
 		if not self.left.detected or not self.right.detected:
@@ -43,19 +49,25 @@ class LaneSearch:
 			print('Fast')
 			return self.__find_lane_pixels_fast(binary_image, self.left.line_fit, self.right.line_fit)
 
+	def update_lane_control(self, binary_image):
+
+		return self.__find_lane_pixels_scanline(binary_image)
+
 	def get_lane_polynomials(self, binary_image):
 		leftx, lefty, rightx, righty = self.find_lane_pixels(binary_image)
 
-		if self.visualize:
-			draw_frame = cv2.cvtColor(binary_image, cv2.COLOR_GRAY2BGR)
-			for i in range(len(leftx)):
-				cv2.circle(draw_frame, (int(leftx[i]), int(lefty[i])), 1, (255, 255, 0))
+		# if self.visualize:
+		# 	draw_frame = cv2.cvtColor(binary_image, cv2.COLOR_GRAY2BGR)
+		# 	for i in range(len(leftx)):
+		# 		cv2.circle(draw_frame, (int(leftx[i]), int(lefty[i])), 1, (255, 255, 0))
 
-			for i in range(len(rightx)):
-				cv2.circle(draw_frame, (int(rightx[i]), int(righty[i])), 1, (255, 0, 255))
+		# 	for i in range(len(rightx)):
+		# 		cv2.circle(draw_frame, (int(rightx[i]), int(righty[i])), 1, (255, 0, 255))
 
-			cv2.imshow(self.visualize_window,draw_frame)
-			cv2.waitKey(self.visualize_delay)
+		# 	cv2.imshow(self.visualize_window,draw_frame)
+		# 	cv2.waitKey(self.visualize_delay)
+
+		return 0, 0, 0 
 
 		left_fitx  = self.left.polyfit_lines(leftx, lefty, binary_image.shape)
 		right_fitx = self.right.polyfit_lines(rightx, righty, binary_image.shape)
@@ -71,6 +83,72 @@ class LaneSearch:
 			cv2.waitKey(self.visualize_delay)
 
 		return left_fitx, right_fitx, self.right.ploty
+
+	def __find_lane_pixels_scanline(self, binary_image):
+		img_height, img_width = binary_image.shape
+		y_scan = img_height / 2 - 80
+		y_scan_margin = 50
+		lpf_rate = 0.6
+
+		y_scan_line_lower = y_scan - y_scan_margin
+		y_scan_line_upper = y_scan + y_scan_margin
+
+		nonzero = binary_image.nonzero()
+		nonzeroy = np.array(nonzero[0])
+		nonzerox = np.array(nonzero[1])
+
+		left_nonzero = ((nonzeroy >= y_scan_line_lower) & (nonzeroy < y_scan_line_upper) & (nonzerox < img_width/2)).nonzero()[0]
+		right_nonzero = ((nonzeroy >= y_scan_line_lower) & (nonzeroy < y_scan_line_upper) & (nonzerox > img_width/2)).nonzero()[0]
+
+		leftx = nonzerox[left_nonzero]
+		lefty = nonzeroy[left_nonzero]
+		rightx = nonzerox[right_nonzero]
+		righty = nonzeroy[right_nonzero]
+
+		if self.visualize:
+			draw_frame = cv2.cvtColor(binary_image, cv2.COLOR_GRAY2BGR)
+			for i in range(len(leftx)):
+				if len(leftx) > 100:
+					cv2.circle(draw_frame, (int(leftx[i]), int(lefty[i])), 1, (0, 255, 0))
+				else:
+					cv2.circle(draw_frame, (int(leftx[i]), int(lefty[i])), 1, (0, 0, 255))
+
+
+			for i in range(len(rightx)):
+				if len(rightx) > 100:
+					cv2.circle(draw_frame, (int(rightx[i]), int(righty[i])), 1, (0, 255, 0))
+				else:
+					cv2.circle(draw_frame, (int(rightx[i]), int(righty[i])), 1, (0, 0, 255))
+
+			cv2.line(draw_frame, (0, y_scan), (img_width, y_scan), (255, 255, 0), 2)
+			# cv2.circle(draw_frame, (int(self.left_center[0]), int(self.left_center[1])), 5, (255, 255, 255))
+			# cv2.circle(draw_frame, (int(self.right_center[0]), int(self.right_center[1])), 5, (255, 255, 255))
+
+
+		self.left.detected = len(leftx) > LaneSearch.minpix_window
+		self.right.detected = len(rightx) > LaneSearch.minpix_window
+
+		# self.left_center = (np.sum(leftx) / len(leftx), np.sum(lefty) / len(lefty))
+		# self.right_center = (np.sum(rightx) / len(rightx), np.sum(righty) / len(righty))
+
+		scan_right_left_x = nonzerox[((nonzeroy == y_scan) & (nonzerox > img_width/2)).nonzero()[0]]
+		# scan_line_left_y = nonzeroy[((nonzeroy == y_scan) & (nonzerox < img_width/2)).nonzero()[0]]
+
+		if len(scan_right_left_x) > 20:
+			control_x_est = np.sum(scan_right_left_x) / len(scan_right_left_x)
+			self.control_x = int(control_x_est * lpf_rate + (1-lpf_rate) * self.control_x)
+			print(self.control_x)
+
+		if self.visualize:
+			result_x = self.control_x
+			cv2.line(draw_frame, (int(result_x), 0), (int(result_x), img_height), (255, 255, 0), 2)
+			cv2.imshow(self.visualize_window,draw_frame)
+			if cv2.waitKey(self.visualize_delay) == ord('q'):
+				exit(1)
+
+
+
+		return leftx, lefty, rightx, righty
 
 
 	def __find_lane_pixels_scan_window(self, binary_image):
