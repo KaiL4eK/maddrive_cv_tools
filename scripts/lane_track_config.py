@@ -125,7 +125,7 @@ class LaneTrackConfig:
 		self.color_filter_transform_path = self.ns + '/' + self.color_filter_transform_name
 		self.color_filter_minmaxs_path   = self.ns + '/' + self.color_filter_minmaxs_name
 
-		self.config_filepath = rospack.get_path('maddrive_cv_tools') + '/lane_config.yaml'
+		self.config_filepath = rospack.get_path('maddrive_cv_tools') + '/config/lane_config.yaml'
 
 	def save_params(self):
 		rospy.loginfo('Saving parameters')

@@ -46,6 +46,8 @@ cf_desc = config.get_color_filter_descriptor()
 roi_desc = config.get_roi_descriptor()
 modeList = cf_desc.get_mode_list()
 
+original_image = None
+
 ##############################################################
 
 def refresh_filter():

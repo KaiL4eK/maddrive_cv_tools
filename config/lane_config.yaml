@@ -1,5 +1,5 @@
 color_filter:
   minmaxs:
-  - [0, 0, 211, 180, 15, 255]
+  - [0, 0, 211, 180, 74, 255]
   transform: 40
-roi: 0.88
+roi: 0.49
