@@ -15,9 +15,9 @@ class LaneSearch:
 	
 	def __init__(self):
 		self.visualize_window = 'lane_search'
-		self.visualize_delay = 1
+		self.visualize_delay = 1000
 		# self.visualize = True
-		self.visualize = False
+		self.visualize = True
 		self.middled = False
 
 		self.counter = 0 # Tick tick tick
@@ -69,8 +69,11 @@ class LaneSearch:
 		# Find the peak of the left and right halves of the histogram
 		# These will be the starting point for the left and right lines
 		midpoint = np.int(histogram.shape[0] / 2)
-		leftx_base = np.argmax(histogram[:midpoint])
-		rightx_base = np.argmax(histogram[midpoint:]) + midpoint
+
+		leftx_base = 0
+		rightx_base = histogram.shape[0]
+		# leftx_base = np.argmax(histogram[:midpoint])
+		# rightx_base = np.argmax(histogram[midpoint:]) + midpoint
 
 		# Set height of windows
 		nwindows = 10  # Choose the number of sliding windows
@@ -163,11 +166,16 @@ class LaneSearch:
 		nonzeroy = np.array(nonzero[0])
 		nonzerox = np.array(nonzero[1])
 
-		left_border_lpoly  = (left_fit[0] * (nonzeroy ** 2) + left_fit[1] * nonzeroy + left_fit[2] - LaneSearch.search_poly_x_margin)
-		right_border_lpoly = (left_fit[0] * (nonzeroy ** 2) + left_fit[1] * nonzeroy + left_fit[2] + LaneSearch.search_poly_x_margin)
+		# left_border_lpoly  = (left_fit[0] * (nonzeroy ** 2) + left_fit[1] * nonzeroy + left_fit[2] - LaneSearch.search_poly_x_margin)
+		# right_border_lpoly = (left_fit[0] * (nonzeroy ** 2) + left_fit[1] * nonzeroy + left_fit[2] + LaneSearch.search_poly_x_margin)
+		# left_border_rpoly  = (right_fit[0] * (nonzeroy ** 2) + right_fit[1] * nonzeroy + right_fit[2] - LaneSearch.search_poly_x_margin)
+		# right_border_rpoly = (right_fit[0] * (nonzeroy ** 2) + right_fit[1] * nonzeroy + right_fit[2] + LaneSearch.search_poly_x_margin)
 
-		left_border_rpoly  = (right_fit[0] * (nonzeroy ** 2) + right_fit[1] * nonzeroy + right_fit[2] - LaneSearch.search_poly_x_margin)
-		right_border_rpoly = (right_fit[0] * (nonzeroy ** 2) + right_fit[1] * nonzeroy + right_fit[2] + LaneSearch.search_poly_x_margin)
+		left_border_lpoly  = (left_fit[0] * nonzeroy + left_fit[1] - LaneSearch.search_poly_x_margin)
+		right_border_lpoly = (left_fit[0] * nonzeroy + left_fit[1] + LaneSearch.search_poly_x_margin)
+		left_border_rpoly  = (right_fit[0] * nonzeroy + right_fit[1] - LaneSearch.search_poly_x_margin)
+		right_border_rpoly = (right_fit[0] * nonzeroy + right_fit[1] + LaneSearch.search_poly_x_margin)
+
 
 		left_lane_inds  = ( (nonzerox > left_border_lpoly) & (nonzerox < right_border_lpoly) )
 		right_lane_inds = ( (nonzerox > left_border_rpoly) & (nonzerox < right_border_rpoly) )
@@ -208,11 +216,11 @@ class Line:
 
 	def __init__(self):
 		self.detected = False
-		self.radius_of_curvature = None
+		# self.radius_of_curvature = None
 		#distance in meters of vehicle center from the line
-		self.line_base_pos = None
+		# self.line_base_pos = None
 		#difference in fit coefficients between last and new fits
-		self.diffs = np.array([0,0,0], dtype='float')
+		# self.diffs = np.array([0,0,0], dtype='float')
 		#x values for detected line pixels
 		self.allx = None
 		#y values for detected line pixels
@@ -221,9 +229,11 @@ class Line:
 		self.line_fit = None # Store the line fit
 
 		# Store recent polynomial coefficients for averaging across frames
-		self.line_fit0_queue = deque(maxlen=Line.MAX_QUEUE_LENGTH)
-		self.line_fit1_queue = deque(maxlen=Line.MAX_QUEUE_LENGTH)
-		self.line_fit2_queue = deque(maxlen=Line.MAX_QUEUE_LENGTH)
+		self.line_fit_queue = deque(maxlen=Line.MAX_QUEUE_LENGTH)
+
+		# self.line_fit0_queue = deque(maxlen=Line.MAX_QUEUE_LENGTH)
+		# self.line_fit1_queue = deque(maxlen=Line.MAX_QUEUE_LENGTH)
+		# self.line_fit2_queue = deque(maxlen=Line.MAX_QUEUE_LENGTH)
 
 		self.ploty = None
 
@@ -237,18 +247,22 @@ class Line:
 			self.ally = ally
 
 			# Fit a second order polynomial to each
-			self.line_fit = np.polyfit(ally, allx, 2)
-			self.line_fit0_queue.append(self.line_fit[0])
-			self.line_fit1_queue.append(self.line_fit[1])
-			self.line_fit2_queue.append(self.line_fit[2])
+			self.line_fit = np.polyfit(ally, allx, 1)
+			self.line_fit_queue.append(self.line_fit)
+			# self.line_fit0_queue.append(self.line_fit[0])
+			# self.line_fit1_queue.append(self.line_fit[1])
+			# self.line_fit2_queue.append(self.line_fit[2])
 		else: # Recover the missing x or y using the previous polyfit data
 			print('Recover using previous points')
-			self.line_fit = [np.mean(self.line_fit0_queue), np.mean(self.line_fit1_queue), np.mean(self.line_fit2_queue)]
+			# self.line_fit = [np.mean(self.line_fit0_queue), np.mean(self.line_fit1_queue), np.mean(self.line_fit2_queue)]
+			self.line_fit = np.mean(self.line_fit_queue, axis = 0)
 
 		if self.ploty is None:
 			self.ploty = np.linspace(0, image_shape[0] - 1, image_shape[0])
-		line_fitx = self.line_fit[0] * self.ploty ** 2 + self.line_fit[1] * self.ploty + self.line_fit[2]
-		line_fitx_int = self.line_fit[0] * image_shape[0] ** 2 + self.line_fit[1] * image_shape[0] + self.line_fit[2]
+		# line_fitx = self.line_fit[0] * self.ploty ** 2 + self.line_fit[1] * self.ploty + self.line_fit[2]
+		line_fitx = self.line_fit[0] * self.ploty + self.line_fit[1]
+		
+		# line_fitx_int = self.line_fit[0] * image_shape[0] ** 2 + self.line_fit[1] * image_shape[0] + self.line_fit[2]
 
 		# y_eval = np.max(self.ploty)
 
@@ -257,6 +271,6 @@ class Line:
 		# #     # Calculate the new radii of curvature
 		# line_curverad = ((1 + (2 * line_fit_cr[0] * y_eval * CarLane.ym_per_pix + line_fit_cr[1]) ** 2) ** 1.5) / np.absolute(2 * line_fit_cr[0])
 		# self.radius_of_curvature = line_curverad
-		self.line_base_pos = line_fitx_int
+		# self.line_base_pos = line_fitx_int
 
 		return line_fitx

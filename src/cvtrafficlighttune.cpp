@@ -47,6 +47,8 @@ int main(int argc, char **argv)
 {
     ros::init( argc, argv, "traffic_light_tuner" );
 
+    CvTrafficLightConfig::load_parameters_from_file();
+
     namedWindow(original_window_name);
     namedWindow(thresh_window_name);
     namedWindow(filtered_window_name);
@@ -112,7 +114,10 @@ int main(int argc, char **argv)
 
         char key = waitKey(30);
         if ( key == 10 || key == 27 )
+        {
+            CvTrafficLightConfig::save_parameters_to_file();
             break;
+        }
     }
 
     return 0;

@@ -38,6 +38,8 @@ public:
     void setColorspaceLimits(int h_min, int s_min, int v_min, int h_max, int s_max, int v_max);
     vector<int> &getColorspaceLimits( void );
 
+    static void save_parameters_to_file( void ) { system("rosrun maddrive_cv_tools save_traffic_light_params.sh"); }
+    static void load_parameters_from_file( void ) { system("rosrun maddrive_cv_tools load_traffic_light_params.sh"); }
 };
 
 #endif // CVTRAFFICLIGHTCONFIG_H
