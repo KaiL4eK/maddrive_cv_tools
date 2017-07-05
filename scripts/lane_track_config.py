@@ -89,18 +89,18 @@ class ImageROI:
 	def __init__(self, roi_height_rel):
 		self.__roi_height_rel = roi_height_rel
 
-	def __get_pixel_height(self, frame_height):
+	def get_pixel_height(self, frame_height):
 		return (1 - self.__roi_height_rel) * frame_height
 
 	def draw_height_border(self, draw_frame, color=(255, 0, 0)):
 		height, width = get_frame_height_width(draw_frame)
-		pixel_upper_border = self.__get_pixel_height(height)
+		pixel_upper_border = self.get_pixel_height(height)
 		cv2.line(draw_frame, (0, int(pixel_upper_border)), 
 							 (width, int(pixel_upper_border)), color=color)
 
 	def mask_frame_resize(self, frame):
 		height, width = get_frame_height_width(frame)
-		pixel_upper_border = self.__get_pixel_height(height)
+		pixel_upper_border = self.get_pixel_height(height)
 
 		result = frame[int(pixel_upper_border):height, :]
 		return cv2.resize(result, (width, height))

@@ -23,21 +23,19 @@ val_Hmin = 74
 val_Hmax = 92
 val_Smin = 120
 val_Smax = 255
-val_Vmin = 10
+val_Vmin = 210
 val_Vmax = 255
-
 
 def imageCallback(ros_data):
     global frame
     frame = bridge.imgmsg_to_cv2(ros_data, "bgr8")
-
 
 def main():
     global frame
     frame = None
 
     rospy.Subscriber('my_camera/rgb/image_color', Image, imageCallback,queue_size = 10)
-
+    # pub = rospy.Publisher('')
     while frame is None: pass
     cv2.namedWindow(window_name)
     def nothing(x): pass
@@ -62,31 +60,32 @@ def main():
         res_frame = cv2.inRange(work_frame_hsv, (trackbar_Hmin_pos, trackbar_Smin_pos, trackbar_Vmin_pos),\
                                                 (trackbar_Hmax_pos, trackbar_Smax_pos, trackbar_Vmax_pos))
         # open_kernel = np.ones((3,3), np.uint8)
-        # close_kernel = np.ones((5,5), np.uint8)
-        # print("I'm gonna filter")
+        close_kernel = np.ones((5, 5), np.uint8)
+
         # res_frame = cv2.morphologyEx(res_frame, cv2.MORPH_OPEN, open_kernel) # erosion followed by dilation
-        # res_frame = cv2.morphologyEx(res_frame, cv2.MORPH_CLOSE, close_kernel) # dilation followed by erosion
-        # print("Filter done")
-        #
-        circles = cv2.HoughCircles(res_frame, cv2.cv.CV_HOUGH_GRADIENT, 1.2, 100)
-        if circles is None:
-            circles = np.round(circles)
-        #
+
+        res_frame = cv2.morphologyEx(res_frame, cv2.MORPH_CLOSE, close_kernel) # dilation followed by erosion
+
+        # circles = cv2.HoughCircles(res_frame, cv2.HOUGH_GRADIENT, 1, 100)
+        # if circles is not None:
+        #     print("I'm here")
+        #     circles = np.round(circles[0, :]).astype("int")
+        #     for (x, y, r) in circles:
+        #         cv2.circle(res_frame, (x, y), r, (0, 0, 255), 4)
+        #         cv2.rectangle(res_frame, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
+        # #
         # ret, thresh = cv2.threshold(res_frame, 127, 255, 0)
-        #
-        # image, contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        # print("I'm gonna draw")
-        # print(len(contours))
-        # for i in contours:
-        #     area = cv2.contourArea(i)
-        #     print(area)
-        # cv2.drawContours(work_frame, contours, -1, (255, 0, 0), 3)
-        # print("Drawing done")
+        ok_cntr = []
+        image, contours, _ = cv2.findContours(res_frame, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        for i in contours:
+            area = cv2.contourArea(i)
+            if area > 650:
+                ok_cntr.append(i)
 
+        cv2.drawContours(work_frame, ok_cntr, -1, (255, 0, 0), 3)
+        if len(ok_cntr) > 1:
+            print("Achtung! Two green signals!")
 
-        # res_bgr_frame = cv2.cvtColor(res_frame, cv2.COLOR_GRAY2BGR)
-        # res_frame = np.hstack((work_frame, res_bgr_frame))
-        # cv2.imshow(window_name, res_frame)
         res_bgr_frame = cv2.cvtColor(res_frame, cv2.COLOR_GRAY2BGR)
         res_frame = np.hstack((work_frame, res_bgr_frame))
         cv2.imshow(window_name, res_frame)

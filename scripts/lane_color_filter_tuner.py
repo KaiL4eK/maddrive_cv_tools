@@ -57,6 +57,9 @@ def refresh_filter():
 	if original_image is None:
 		return
 
+	roi_height_y = roi_desc.get_pixel_height(original_image.shape[0])
+	roi_height_y = int(roi_height_y)
+
 	roi_frame = roi_desc.mask_frame_resize(original_image)
 
 	if current_mode is not None:
@@ -68,7 +71,8 @@ def refresh_filter():
 
 	filtered_img_full, filling_full = cf_desc.apply_filters(roi_frame, 30)
 
-	rgb_original_image = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2RGB)
+	rgb_original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+	cv2.line(rgb_original_image, (0, roi_height_y), (rgb_original_image.shape[1], roi_height_y), thickness=2, color=(255, 255, 0))
 
 	# convert the images to PIL format and then to ImageTk format
 	orig_img = ImageTk.PhotoImage(Image.fromarray(rgb_original_image))
@@ -197,6 +201,9 @@ def saveModes_cb():
 	config.set_color_filter_descriptor(cf_desc)
 	config.save_params()
 
+def saveROI_cb():
+	config.set_roi_descriptor(roi_desc)
+	config.save_params()
 
 addModeBtn = Button(modeListControlFrame, text="Add mode", command=addMode_cb)
 addModeBtn.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
@@ -206,6 +213,9 @@ removeModeBtn.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
 
 saveModesBtn = Button(modeListControlFrame, text="Save modes", command=saveModes_cb)
 saveModesBtn.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
+
+saveROIBtn = Button(modeListControlFrame, text="Save ROI", command=saveROI_cb)
+saveROIBtn.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
 
 
 ##############################################################
@@ -217,26 +227,35 @@ def slider_cb(val):
 	
 	refresh_filter()
 
+def roi_slider_cb(val):
+	roi_desc.set_height_rel(float(val) / 100)
+	refresh_filter()
+
 # sliders_widget_frame = Frame(root, highlightbackground='red', highlightthickness=5)
 # sliders_widget_frame.grid(row=3, column=0, columnspan=6, sticky='we')
 
+roi_param_scale_y_rel = roi_desc.get_height_rel()
+roi_param_scale = Scale(root, label='roi', from_=0, to=100, orient=HORIZONTAL, command = roi_slider_cb)
+roi_param_scale.grid(row=2, column=0, columnspan=6, sticky='we', padx=5, pady=5)
+roi_param_scale.set(roi_param_scale_y_rel*100)
+
 first_param_frame_min = Scale(root, label='color min1', from_=0, to=180, orient=HORIZONTAL, command = slider_cb)
-first_param_frame_min.grid(row=2, column=0, columnspan=3, sticky='we', padx=5, pady=5)
+first_param_frame_min.grid(row=3, column=0, columnspan=3, sticky='we', padx=5, pady=5)
 
 first_param_frame_max = Scale(root, label='color max1', from_=0, to=180, orient=HORIZONTAL, command = slider_cb)
-first_param_frame_max.grid(row=2, column=3, columnspan=3, sticky='we', padx=5, pady=5)
+first_param_frame_max.grid(row=3, column=3, columnspan=3, sticky='we', padx=5, pady=5)
 
 second_param_frame_min = Scale(root, label='color min2', from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
-second_param_frame_min.grid(row=3, column=0, columnspan=3, sticky='we', padx=5, pady=5)
+second_param_frame_min.grid(row=4, column=0, columnspan=3, sticky='we', padx=5, pady=5)
 
 second_param_frame_max = Scale(root, label='color max2', from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
-second_param_frame_max.grid(row=3, column=3, columnspan=3, sticky='we', padx=5, pady=5)
+second_param_frame_max.grid(row=4, column=3, columnspan=3, sticky='we', padx=5, pady=5)
 
 third_param_frame_min = Scale(root, label='color min3', from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
-third_param_frame_min.grid(row=4, column=0, columnspan=3, sticky='we', padx=5, pady=5)
+third_param_frame_min.grid(row=5, column=0, columnspan=3, sticky='we', padx=5, pady=5)
 
 third_param_frame_max = Scale(root, label='color max3', from_=0, to=255, orient=HORIZONTAL, command = slider_cb)
-third_param_frame_max.grid(row=4, column=3, columnspan=3, sticky='we', padx=5, pady=5)
+third_param_frame_max.grid(row=5, column=3, columnspan=3, sticky='we', padx=5, pady=5)
 
 
 ##############################################################

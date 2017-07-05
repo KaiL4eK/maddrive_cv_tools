@@ -2,6 +2,7 @@
 
 import rospy
 from sensor_msgs.msg import Image
+import std_msgs.msg 
 import cv2
 import numpy as np
 from cv_bridge import CvBridge, CvBridgeError
@@ -37,6 +38,7 @@ def main():
     frame = None
 
     rospy.Subscriber('my_camera/rgb/image_color', Image, imageCallback, queue_size = 10)
+    pub = rospy.Publisher('cross_line/perc', std_msgs.msg.Float64, )
     # frame = cv2.imread(filepath)
     while frame is None: pass
 
