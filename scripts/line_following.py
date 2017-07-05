@@ -22,11 +22,11 @@ rospy.init_node('lane_follower')
 
 #-------------------------------------------------
 
-use_kinect_topic = rospy.get_param('~use_kinect_topic', False)
+use_topic = rospy.get_param('~use_topic', False)
 file_as_video = rospy.get_param('~file_as_video', False)
 filepath = rospy.get_param('~filepath', '')
 
-rospy.loginfo('[%s] Param <use_kinect_topic>: %s' % (os.path.basename(__file__), str(use_kinect_topic)))
+rospy.loginfo('[%s] Param <use_topic>: %s' % (os.path.basename(__file__), str(use_topic)))
 rospy.loginfo('[%s] Param <file_as_video>: %s' % (os.path.basename(__file__), str(file_as_video)))
 rospy.loginfo('[%s] Param <filepath>: %s' % (os.path.basename(__file__), str(filepath)))
 
@@ -42,7 +42,7 @@ visible_frame_size = (640, 480)
 def main():
 	global frame
 
-	if use_kinect_topic:
+	if use_topic:
 		rospy.Subscriber('image', sensor_msgs.msg.Image, image_callback,  queue_size = 10)	
 
 	elif file_as_video:
@@ -65,7 +65,7 @@ def main():
 	lane = LaneSearch()
 
 	while not rospy.is_shutdown():
-		if not use_kinect_topic:
+		if not use_topic:
 			if file_as_video:
 				ret, frame = cap.read()
 		
