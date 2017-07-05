@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<launch>
+	<arg name="path" default="/home/unior/bags/tl_test.bag" />
+	
+
+	<node pkg="rosbag" type="play" name="player" output="log" args="-l $(arg path)" />
+
+	<node pkg="maddrive_cv_tools" name="traffic_light_region" type="traffic_light_region.py" output="screen">
+		<remap from="image" to="my_camera/rgb/image_color" />
+	</node >
+</launch>

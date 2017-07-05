@@ -35,8 +35,8 @@ def main():
     global frame
     frame = None
 
-    rospy.Subscriber('my_camera/rgb/image_color', Image, imageCallback, queue_size = 10)
-    pub = rospy.Publisher('traffic_light/green_light', std_msgs.msg.Float64, queue_size = 10)
+    rospy.Subscriber('image', Image, imageCallback, queue_size = 10)
+    pub = rospy.Publisher('tl_zone_green', std_msgs.msg.Float64, queue_size = 10)
     while frame is None: pass
     cv2.namedWindow(window_name)
     def nothing(x): pass

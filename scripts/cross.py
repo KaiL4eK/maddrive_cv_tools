@@ -38,7 +38,7 @@ def main():
     global frame
     frame = None
 
-    rospy.Subscriber('my_camera/rgb/image_color', Image, imageCallback, queue_size = 10)
+    rospy.Subscriber('image', Image, imageCallback, queue_size = 10)
     pub_mean = rospy.Publisher('cross_line/mean_perc', std_msgs.msg.Float64, queue_size = 10)
     pub_max = rospy.Publisher('cross_line/max_perc', std_msgs.msg.Float64, queue_size = 10)
     # frame = cv2.imread(filepath)
