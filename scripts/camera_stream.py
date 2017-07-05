@@ -12,7 +12,10 @@ rospy.init_node('video_2_camera_stream')
 videoPub = rospy.Publisher('my_camera/rgb/image_color', Image, queue_size=10)
 rate = rospy.Rate(30)
 
-capture = cv2.VideoCapture(1)
+# capture = cv2.VideoCapture(0)
+capture = cv2.VideoCapture('/dev/v4l/by-id/usb-046d_0825_3F21E440-video-index0')    #tl
+# capture = cv2.VideoCapture('/dev/v4l/by-id/usb-046d_0825_CA00E440-video-index0')    #lane
+
 
 if not capture.isOpened():
     rospy.logerr('Failed to open file')
