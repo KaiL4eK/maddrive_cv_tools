@@ -51,7 +51,6 @@ def main():
         work_frame = np.copy(frame)
         work_frame = cv2.resize(work_frame, (320, 240))
         work_frame_hsv = cv2.cvtColor(work_frame, cv2.COLOR_BGR2HSV)
-        work_frame_hsv = cv2.cvtColor(work_frame, cv2.COLOR_BGR2HSV)
         trackbar_Hmin_pos = cv2.getTrackbarPos(color_trackbar_Hmin, window_name)
         trackbar_Hmax_pos = cv2.getTrackbarPos(color_trackbar_Hmax, window_name)
         trackbar_Smin_pos = cv2.getTrackbarPos(color_trackbar_Smin, window_name)
