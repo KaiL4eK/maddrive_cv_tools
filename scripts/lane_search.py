@@ -100,11 +100,11 @@ class LaneSearch:
 		# self.left_center = (np.sum(leftx) / len(leftx), np.sum(lefty) / len(lefty))
 		# self.right_center = (np.sum(rightx) / len(rightx), np.sum(righty) / len(righty))
 
-		scan_right_left_x = nonzerox[((nonzeroy == y_scan) & (nonzerox > img_width/2)).nonzero()[0]]
+		scan_left_x = nonzerox[((nonzeroy == y_scan) & (nonzerox < img_width/2)).nonzero()[0]]
 		# scan_line_left_y = nonzeroy[((nonzeroy == y_scan) & (nonzerox < img_width/2)).nonzero()[0]]
 
-		if len(scan_right_left_x) > 20:
-			control_x_est = np.sum(scan_right_left_x) / len(scan_right_left_x)
+		if len(scan_left_x) > 20:
+			control_x_est = np.sum(scan_left_x) / len(scan_left_x)
 			self.control_x = int(control_x_est * lpf_rate + (1-lpf_rate) * self.control_x)
 			# print(self.control_x)
 

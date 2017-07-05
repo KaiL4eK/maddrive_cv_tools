@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<launch>
+	<arg name="path" default="/home/unior/bags/bag_test.bag" />
+	<include file="$(find maddrive_cv_tools)/config/load_config.xml" />
+	
+	<!-- <node pkg="rosbag" type="play" name="player" output="log" args="-l $(arg path)" /> -->
+
+	<node pkg="maddrive_cv_tools" name="lane_params_tuner" type="lane_params_tuner.py" output="screen">
+		<param name="use_kinect_topic" value="true" />
+		<remap from="image" to="my_camera/rgb/image_color" />
+	</node >
+</launch>

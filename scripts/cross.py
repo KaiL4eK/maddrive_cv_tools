@@ -1,8 +1,9 @@
-#!/usr/bin/env python       # let know what language is used
+#!/usr/bin/env python
+#  let know what language is used
 
 import rospy
 from sensor_msgs.msg import Image
-import std_msgs.msg 
+import std_msgs.msg
 import cv2
 import numpy as np
 from cv_bridge import CvBridge, CvBridgeError
@@ -38,7 +39,8 @@ def main():
     frame = None
 
     rospy.Subscriber('my_camera/rgb/image_color', Image, imageCallback, queue_size = 10)
-    pub = rospy.Publisher('cross_line/perc', std_msgs.msg.Float64, )
+    pub_mean = rospy.Publisher('cross_line/mean_perc', std_msgs.msg.Float64, queue_size = 10)
+    pub_max = rospy.Publisher('cross_line/max_perc', std_msgs.msg.Float64, queue_size = 10)
     # frame = cv2.imread(filepath)
     while frame is None: pass
 
@@ -68,7 +70,7 @@ def main():
         res_bgr_frame = cv2.cvtColor(res_frame, cv2.COLOR_GRAY2BGR)
         y = range(240)
         white_sum = np.sum(res_frame, axis = 1)
-        print(np.max(white_sum))
+        # print(np.max(white_sum))
 
         # norm_white_sum = white_sum / float(np.max(white_sum))
         # print(norm_white_sum > 0.8)
@@ -77,6 +79,8 @@ def main():
 
         # high_white_value = norm_white_sum > 0.8
         # high_white_value_res = norm_white_sum[high_white_value]
+        control_cross = -1
+        max_y = -1
         y_arr = []
         for y, val in enumerate(white_sum):
             if val > 30000:
@@ -86,6 +90,12 @@ def main():
         if len(y_arr) > 10:
             centr_cross = int(np.mean(y_arr))
             cv2.line(work_frame, (0, centr_cross), (360, centr_cross), (0, 0, 255), 5)
+            control_cross = (float(centr_cross) / 240 * 100)
+            max_y = float(max(y_arr)) / 240 * 100
+
+        pub_mean.publish(control_cross)
+        pub_max.publish(max_y)
+
 
         res_frame = np.hstack((work_frame,res_bgr_frame))
         cv2.imshow(window_name, res_frame)

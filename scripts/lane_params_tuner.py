@@ -14,7 +14,7 @@ from PIL import ImageTk
 import cv2
 
 bridge = CvBridge()
-
+confidence = 30
 render_image_size = (320, 240)
 
 def image_callback(ros_data):
@@ -53,6 +53,7 @@ original_image = None
 def refresh_filter():
 	# grab a reference to the image panels
 	global original_image_widget, thres_image_widget, output_image_widget
+	global confidence
 	
 	if original_image is None:
 		return
@@ -69,7 +70,12 @@ def refresh_filter():
 		filtered_img = np.zeros_like(roi_frame)
 		filling = 0
 
-	filtered_img_full, filling_full = cf_desc.apply_filters(roi_frame, 30)
+	try:
+		confidence = int(confidenceValue.get())
+	except:
+		pass
+
+	filtered_img_full, filling_full = cf_desc.apply_filters(roi_frame, confidence)
 
 	rgb_original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
 	cv2.line(rgb_original_image, (0, roi_height_y), (rgb_original_image.shape[1], roi_height_y), thickness=2, color=(255, 255, 0))
@@ -205,6 +211,10 @@ def saveROI_cb():
 	config.set_roi_descriptor(roi_desc)
 	config.save_params()
 
+def conf_cb():
+	global confidence
+
+
 addModeBtn = Button(modeListControlFrame, text="Add mode", command=addMode_cb)
 addModeBtn.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
 
@@ -217,6 +227,9 @@ saveModesBtn.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
 saveROIBtn = Button(modeListControlFrame, text="Save ROI", command=saveROI_cb)
 saveROIBtn.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
 
+confidenceValue = Entry(modeListControlFrame, text="Confidence value")
+confidenceValue.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
+confidenceValue.insert(0, '0')
 
 ##############################################################
 
