@@ -211,9 +211,6 @@ def saveROI_cb():
 	config.set_roi_descriptor(roi_desc)
 	config.save_params()
 
-def conf_cb():
-	global confidence
-
 
 addModeBtn = Button(modeListControlFrame, text="Add mode", command=addMode_cb)
 addModeBtn.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
@@ -229,7 +226,7 @@ saveROIBtn.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
 
 confidenceValue = Entry(modeListControlFrame, text="Confidence value")
 confidenceValue.pack(side=BOTTOM, fill="both", expand="yes", padx=5, pady=5)
-confidenceValue.insert(0, '0')
+confidenceValue.insert(0, '30')
 
 ##############################################################
 

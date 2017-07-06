@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 rospy.init_node('traffic_light_region')
 bridge = CvBridge()
 
-window_name = 'image_for_searching_contours'
+window_name = 'traffic_light'
 color_trackbar_Hmin = 'H__min'
 color_trackbar_Hmax = 'H__max'
 color_trackbar_Smin = 'S__min'
@@ -20,12 +20,19 @@ color_trackbar_Smax = 'S__max'
 color_trackbar_Vmin = 'V_min'
 color_trackbar_Vmax = 'V_max'
 
-val_Hmin = 74
-val_Hmax = 92
-val_Smin = 120
-val_Smax = 255
-val_Vmin = 210
-val_Vmax = 255
+# val_Hmin = 56
+# val_Hmax = 87
+# val_Smin = 147
+# val_Smax = 229
+# val_Vmin = 124
+# val_Vmax = 198
+
+val_Hmin = 106
+val_Hmax = 125
+val_Smin = 79
+val_Smax = 163
+val_Vmin = 27
+val_Vmax = 77
 
 def imageCallback(ros_data):
     global frame
@@ -97,6 +104,7 @@ def main():
 
         res_bgr_frame = cv2.cvtColor(frame_inRange, cv2.COLOR_GRAY2BGR)
         res_frame = np.hstack((work_frame, res_bgr_frame))
+        cv2.putText(res_frame, str(pub_area), (10,70), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,0,0), 3)
         cv2.imshow(window_name, res_frame)
 
         if cv2.waitKey(1) == ord('x'): break

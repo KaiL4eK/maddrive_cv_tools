@@ -9,7 +9,7 @@ import numpy as np
 from cv_bridge import CvBridge, CvBridgeError
 import matplotlib.pyplot as plt
 
-window_name = 'roi'
+window_name = 'crossing'
 color_trackbar_Hmin = 'H__min'
 color_trackbar_Hmax = 'H__max'
 color_trackbar_Smin = 'S__min'
@@ -96,8 +96,8 @@ def main():
         pub_mean.publish(control_cross)
         pub_max.publish(max_y)
 
-
         res_frame = np.hstack((work_frame,res_bgr_frame))
+        cv2.putText(res_frame, str(control_cross), (10,70), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,0,0), 3)
         cv2.imshow(window_name, res_frame)
 
         if cv2.waitKey(1) == ord('x'): break

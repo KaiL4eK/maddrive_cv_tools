@@ -9,14 +9,13 @@ from collections import deque
 class LaneSearch:
 
 	search_window_x_margin = 100
-	search_poly_x_margin   = 40
+	search_poly_x_margin   = 60
 	minpix_window          = 100
-	minpix_full            = 1000
+	minpix_full            = 500
 	
 	def __init__(self):
 		self.visualize_window = 'lane_search'
-		self.visualize_delay = 0
-		# self.visualize = True
+		self.visualize_delay = 1
 		self.visualize = False
 		self.middled = False
 
@@ -38,15 +37,15 @@ class LaneSearch:
 
 		# print('Check for pixels')
 		# if self.left.line_fit is None or self.right.line_fit is None:
-		if not self.left.detected or not self.right.detected:
-			print('Not detected')
+		if not self.left.detected:
+			# print('Not detected')
 			return self.__find_lane_pixels_scan_window(binary_image)
 		# axis line is in the middle
-		elif self.middled or np.array_equal(self.left.allx, self.right.allx):
-			print('Middled')
-			return self.__find_lane_pixels_scan_window(binary_image)
+		# elif self.middled or np.array_equal(self.left.allx, self.right.allx):
+			# print('Middled')
+			# return self.__find_lane_pixels_scan_window(binary_image)
 		else:
-			print('Fast')
+			# print('Fast')
 			return self.__find_lane_pixels_fast(binary_image, self.left.line_fit, self.right.line_fit)
 
 	def update_lane_control(self, binary_image):
@@ -103,7 +102,9 @@ class LaneSearch:
 		scan_left_x = nonzerox[((nonzeroy == y_scan) & (nonzerox < img_width/2)).nonzero()[0]]
 		# scan_line_left_y = nonzeroy[((nonzeroy == y_scan) & (nonzerox < img_width/2)).nonzero()[0]]
 
-		if len(scan_left_x) > 20:
+		# print(len(scan_left_x))
+		
+		if len(scan_left_x) > 10 and len(scan_left_x) < 50:
 			control_x_est = np.sum(scan_left_x) / len(scan_left_x)
 			self.control_x = int(control_x_est * lpf_rate + (1-lpf_rate) * self.control_x)
 			# print(self.control_x)
@@ -155,6 +156,8 @@ class LaneSearch:
 		midpoint = np.int(histogram.shape[0] / 2)
 
 		leftx_base = 0
+		window_x_margin = LaneSearch.search_window_x_margin / 2
+
 		rightx_base = histogram.shape[0]
 		# leftx_base = np.argmax(histogram[:midpoint])
 		# rightx_base = np.argmax(histogram[midpoint:]) + midpoint
@@ -181,10 +184,10 @@ class LaneSearch:
 			# Identify window boundaries in x and y (and right and left)
 			win_y_low = binary_image.shape[0] - (window + 1) * window_height
 			win_y_high = binary_image.shape[0] - window * window_height
-			win_xleft_low = leftx_current - LaneSearch.search_window_x_margin
-			win_xleft_high = leftx_current + LaneSearch.search_window_x_margin
-			win_xright_low = rightx_current - LaneSearch.search_window_x_margin
-			win_xright_high = rightx_current + LaneSearch.search_window_x_margin
+			win_xleft_low = leftx_current - window_x_margin #LaneSearch.search_window_x_margin
+			win_xleft_high = leftx_current + window_x_margin #LaneSearch.search_window_x_margin
+			win_xright_low = rightx_current - window_x_margin #LaneSearch.search_window_x_margin
+			win_xright_high = rightx_current + window_x_margin #LaneSearch.search_window_x_margin
 
 			# print()
 			if abs(rightx_current - leftx_current) < 3:
@@ -203,6 +206,7 @@ class LaneSearch:
 				draw_frame = cv2.cvtColor(binary_image, cv2.COLOR_GRAY2BGR)
 
 			if len(good_left_inds) > LaneSearch.minpix_window:
+				# window_x_margin -= 30
 				leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
 				if self.visualize: cv2.rectangle(draw_frame, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high), (0, 255, 0), 2)
 			else:
@@ -276,7 +280,7 @@ class LaneSearch:
 			if cv2.waitKey(self.visualize_delay) == ord('q'):
 				exit(1)
 
-		if not self.right.detected or not self.left.detected:
+		if not self.left.detected:
 			print('Achtung!!!!')
 
 		# Extract left and right line pixel positions

@@ -10,6 +10,7 @@ import numpy as np
 from lane_search import *
 
 bridge = CvBridge()
+frame = None
 
 def image_callback(ros_data):
 	global frame
@@ -79,19 +80,29 @@ def main():
 
 			orig_height, orig_width = get_frame_height_width(work_frame)
 			roi_frame = roi_desc.mask_frame_resize(work_frame)
-			bin_frame, _ = cf_desc.apply_filters(roi_frame, 10)
+			bin_frame, _ = cf_desc.apply_filters(roi_frame, 50)
 
-			lane.update_lane_control(bin_frame)
+			# lane.update_lane_control(bin_frame)
 
-			control_right = lane.control_x
+			left_fitx, _, fity = lane.get_lane_polynomials(bin_frame)
+			for i in range(len(fity)):
+				cv2.circle(roi_frame, (int(left_fitx[i]), int(fity[i])), 1, (0, 255, 0))
+
+			control_right = left_fitx[100]
+
+			# control_right = lane.control_x
 			cv2.line(roi_frame, (int(control_right), 0), (int(control_right), orig_height), (255, 255, 0), thickness=3)
 
 			out_frame = cv2.resize(roi_frame, (320, 240))
 			# result_frame = np.hstack( (work_frame, roi_frame) );
+			cv2.putText(out_frame, str(control_right), (10,70), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,0,0), 3)
 			cv2.imshow(window_name, out_frame)
+			# cv2.imshow('1', bin_frame)
+
 			cv2.waitKey(1)
 
 			control_pub.publish(control_right)
+			# print(control_right)
 		else:
 			rospy.loginfo('Video closed or error')
 			break
